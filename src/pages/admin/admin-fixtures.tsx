@@ -226,7 +226,32 @@ export function AdminFixtures({}: AdminFixturesProps) {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2"><Label>Competition Name</Label><Input value={form.competition_name} onChange={(e) => setForm({ ...form, competition_name: e.target.value })} placeholder="Nairobi Open Cup" /></div>
-              <div className="space-y-2"><Label>Round</Label><Input value={form.round} onChange={(e) => setForm({ ...form, round: e.target.value })} placeholder="Quarter Final" /></div>
+              <div className="space-y-2">
+  <Label>Round</Label>
+  <Select
+    value={form.round}
+    onValueChange={(v) => setForm({ ...form, round: v })}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select round" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="Qualifier">Qualifier</SelectItem>
+      <SelectItem value="Group Stage">Group Stage</SelectItem>
+      <SelectItem value="Round of 64">Round of 64</SelectItem>
+      <SelectItem value="Round of 32">Round of 32</SelectItem>
+      <SelectItem value="Round of 16">Round of 16</SelectItem>
+      <SelectItem value="Quarter-final">Quarter-final</SelectItem>
+      <SelectItem value="Semi-final">Semi-final</SelectItem>
+      <SelectItem value="Third-place Playoff">Third-place Playoff</SelectItem>
+      <SelectItem value="Final">Final</SelectItem>
+      <SelectItem value="Friendly">Friendly</SelectItem>
+      <SelectItem value="Losers Round 2">Losers Round 2</SelectItem>
+      <SelectItem value="Winners Final">Winners Final</SelectItem>
+      <SelectItem value="Money Round">Money Round</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2"><Label>Venue Name</Label><Input value={form.venue_name} onChange={(e) => setForm({ ...form, venue_name: e.target.value })} placeholder="Shark Pool Hall" /></div>

@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/admin/empty-state';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Globe } from 'lucide-react';
 import type { Country } from '@/types/db';
+import { CountryFlag } from '@/components/country-flag';
 
 interface AdminCountriesProps {
   navigate: (to: string) => void;
@@ -94,7 +95,12 @@ export function AdminCountries({}: AdminCountriesProps) {
           {countries.map((c) => (
             <Card key={c.id}>
               <CardContent className="flex items-center gap-3 p-4">
-                <span className="text-2xl">{c.flag_emoji}</span>
+                <CountryFlag
+  isoCode={c.iso_code}
+  width={32}
+  height={22}
+  className="flex-shrink-0 rounded-sm"
+/>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{c.name}</p>
                   <p className="text-xs text-muted-foreground">{c.iso_code}</p>

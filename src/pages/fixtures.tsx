@@ -43,53 +43,58 @@ export function FixturesPage({ navigate, params }: FixturesPageProps) {
     .filter((f) => disciplineFilter === 'all' || f.discipline_id === disciplineFilter);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <h1 className="font-heading text-3xl font-bold">Fixtures & Results</h1>
-        <p className="mt-1 text-muted-foreground">All scheduled, live, and completed matches</p>
-      </div>
-
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="all" className="gap-1"><Calendar className="h-3.5 w-3.5" /> All</TabsTrigger>
-            <TabsTrigger value="live" className="gap-1"><Activity className="h-3.5 w-3.5" /> Live</TabsTrigger>
-            <TabsTrigger value="upcoming" className="gap-1"><Calendar className="h-3.5 w-3.5" /> Upcoming</TabsTrigger>
-            <TabsTrigger value="results" className="gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Results</TabsTrigger>
+            <TabsTrigger value="all" className="gap-1">
+              <Calendar className="h-3.5 w-3.5" /> All
+            </TabsTrigger>
+            <TabsTrigger value="live" className="gap-1">
+              <Activity className="h-3.5 w-3.5" /> Live
+            </TabsTrigger>
+            <TabsTrigger value="upcoming" className="gap-1">
+              <Calendar className="h-3.5 w-3.5" /> Upcoming
+            </TabsTrigger>
+            <TabsTrigger value="results" className="gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Results
+            </TabsTrigger>
           </TabsList>
+
+          <TabsContent value={activeTab} className="mt-0">
+            {loading ? (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-32 animate-pulse rounded-xl bg-muted" />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="py-20 text-center">
+                <Calendar className="mx-auto h-12 w-12 text-muted-foreground/40" />
+                <p className="mt-4 text-muted-foreground">No fixtures found.</p>
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {filtered.map((fx) => (
+                  <FixtureCard key={fx.id} fixture={fx} navigate={navigate} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
 
         <Select value={disciplineFilter} onValueChange={setDisciplineFilter}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Discipline" /></SelectTrigger>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Discipline" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Disciplines</SelectItem>
             {disciplines.map((d) => (
-              <SelectItem key={d.id} value={d.id}>{d.icon_emoji} {d.name}</SelectItem>
+              <SelectItem key={d.id} value={d.id}>
+                {d.icon_emoji} {d.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
-
-      <TabsContent value={activeTab} className="mt-0">
-        {loading ? (
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-32 animate-pulse rounded-xl bg-muted" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="py-20 text-center">
-            <Calendar className="mx-auto h-12 w-12 text-muted-foreground/40" />
-            <p className="mt-4 text-muted-foreground">No fixtures found.</p>
-          </div>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((fx) => (
-              <FixtureCard key={fx.id} fixture={fx} navigate={navigate} />
-            ))}
-          </div>
-        )}
-      </TabsContent>
-    </div>
   );
 }

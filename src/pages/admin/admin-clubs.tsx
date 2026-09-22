@@ -233,8 +233,20 @@ export function AdminClubs({}: AdminClubsProps) {
                 <Select value={form.country_id} onValueChange={(v) => setForm({ ...form, country_id: v })}>
                   <SelectTrigger>
   <SelectValue placeholder="Select country">
-    {countries.find((c) => c.id === form.country_id)?.flag_emoji}{' '}
-    {countries.find((c) => c.id === form.country_id)?.name}
+    {(() => {
+      const country = countries.find((c) => c.id === form.country_id);
+      return country ? (
+        <>
+          <CountryFlag
+            isoCode={country.iso_code}
+            width={20}
+            height={14}
+            className="mr-2 inline-block"
+          />
+          {country.name}
+        </>
+      ) : null;
+    })()}
   </SelectValue>
 </SelectTrigger>
                   <SelectContent>

@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/admin/empty-state';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Trophy } from 'lucide-react';
 import type { Ranking, Player, PoolDiscipline, Country } from '@/types/db';
+import { CountryFlag } from '@/components/country-flag';
 
 interface AdminRankingsProps {
   navigate: (to: string) => void;
@@ -163,9 +164,50 @@ export function AdminRankings({}: AdminRankingsProps) {
               <div className="space-y-2"><Label>Discipline</Label><Select value={form.discipline_id} onValueChange={(v) => setForm({ ...form, discipline_id: v })}><SelectTrigger><SelectValue placeholder="Select discipline" /></SelectTrigger><SelectContent><SelectItem value="none">All Disciplines</SelectItem>{disciplines.map((d) => <SelectItem key={d.id} value={d.id}>{d.icon_emoji} {d.name}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-2"><Label>Scope</Label><Select value={form.scope} onValueChange={(v) => setForm({ ...form, scope: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SCOPE_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent></Select></div>
             </div>
-            {form.scope !== 'global' && (
-              <div className="space-y-2"><Label>Country</Label><Select value={form.country_id} onValueChange={(v) => setForm({ ...form, country_id: v })}><SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{countries.map((c) => <SelectItem key={c.id} value={c.id}>{c.flag_emoji} {c.name}</SelectItem>)}</SelectContent></Select></div>
-            )}
+           {form.scope !== 'global' && (
+  <div className="space-y-2">
+    <Label>Country</Label>
+    <Select
+      value={form.country_id}
+      onValueChange={(v) => setForm({ ...form, country_id: v })}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select country">
+          {(() => {
+            const country = countries.find((c) => c.id === form.country_id);
+            return country ? (
+              <>
+                <CountryFlag
+                  isoCode={country.iso_code}
+                  width={20}
+                  height={14}
+                  className="mr-2 inline-block"
+                />
+                {country.name}
+              </>
+            ) : null;
+          })()}
+        </SelectValue>
+      </SelectTrigger>
+
+      <SelectContent>
+        <SelectItem value="none">None</SelectItem>
+
+        {countries.map((c) => (
+          <SelectItem key={c.id} value={c.id}>
+            <CountryFlag
+              isoCode={c.iso_code}
+              width={20}
+              height={14}
+              className="mr-2 inline-block"
+            />
+            {c.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)}
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2"><Label>Rank Position</Label><Input type="number" value={form.rank_position} onChange={(e) => setForm({ ...form, rank_position: e.target.value })} placeholder="1" /></div>
               <div className="space-y-2"><Label>Points</Label><Input type="number" value={form.points} onChange={(e) => setForm({ ...form, points: e.target.value })} /></div>

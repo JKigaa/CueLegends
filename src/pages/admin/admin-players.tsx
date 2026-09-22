@@ -13,6 +13,8 @@ import { EmptyState } from '@/components/admin/empty-state';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Search, CircleDot } from 'lucide-react';
 import type { Player, Country, Club, PoolDiscipline } from '@/types/db';
+import { CountryFlag } from '@/components/country-flag';
+
 
 interface AdminPlayersProps {
   navigate: (to: string) => void;
@@ -173,7 +175,48 @@ export function AdminPlayers({}: AdminPlayersProps) {
               <div className="space-y-2"><Label>Slug *</Label><Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="brian-otieno" /></div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2"><Label>Country</Label><Select value={form.country_id} onValueChange={(v) => setForm({ ...form, country_id: v })}><SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{countries.map((c) => <SelectItem key={c.id} value={c.id}>{c.flag_emoji} {c.name}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2">
+  <Label>Country</Label>
+  <Select
+    value={form.country_id}
+    onValueChange={(v) => setForm({ ...form, country_id: v })}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select country">
+        {(() => {
+          const country = countries.find((c) => c.id === form.country_id);
+          return country ? (
+            <>
+              <CountryFlag
+                isoCode={country.iso_code}
+                width={20}
+                height={14}
+                className="mr-2 inline-block"
+              />
+              {country.name}
+            </>
+          ) : null;
+        })()}
+      </SelectValue>
+    </SelectTrigger>
+
+    <SelectContent>
+      <SelectItem value="none">None</SelectItem>
+
+      {countries.map((c) => (
+        <SelectItem key={c.id} value={c.id}>
+          <CountryFlag
+            isoCode={c.iso_code}
+            width={20}
+            height={14}
+            className="mr-2 inline-block"
+          />
+          {c.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
               <div className="space-y-2"><Label>Current Club</Label><Select value={form.current_club_id} onValueChange={(v) => setForm({ ...form, current_club_id: v })}><SelectTrigger><SelectValue placeholder="Select club" /></SelectTrigger><SelectContent><SelectItem value="none">Free Agent</SelectItem>{clubs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
