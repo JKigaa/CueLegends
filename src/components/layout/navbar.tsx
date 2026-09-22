@@ -79,7 +79,7 @@ export function Navbar({ navigate, path }: NavbarProps) {
         {/* Desktop admin link */}
         <button
           onClick={() => navigate('/admin')}
-          className="ml-auto hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex lg:hidden"
+          className="ml-auto hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
         >
           <Settings className="h-4 w-4" /> Admin
         </button>
