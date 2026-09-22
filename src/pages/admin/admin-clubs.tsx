@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CountryFlag } from '@/components/country-flag';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -230,10 +231,20 @@ export function AdminClubs({}: AdminClubsProps) {
               <div className="space-y-2">
                 <Label>Country</Label>
                 <Select value={form.country_id} onValueChange={(v) => setForm({ ...form, country_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                  <SelectTrigger>
+  <SelectValue placeholder="Select country">
+    {countries.find((c) => c.id === form.country_id)?.flag_emoji}{' '}
+    {countries.find((c) => c.id === form.country_id)?.name}
+  </SelectValue>
+</SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {countries.map((c) => <SelectItem key={c.id} value={c.id}>{c.flag_emoji} {c.name}</SelectItem>)}
+                    {countries.map((c) => (
+  <SelectItem key={c.id} value={c.id}>
+    <CountryFlag isoCode={c.iso_code} width={20} height={14} className="mr-2 inline-block" />
+    {c.name}
+  </SelectItem>
+))}
                   </SelectContent>
                 </Select>
               </div>
