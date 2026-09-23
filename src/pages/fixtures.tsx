@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { FixtureCard } from '@/components/fixture-card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Fixture, PoolDiscipline } from '@/types/db';
 import { Calendar, Activity, CheckCircle2 } from 'lucide-react';
@@ -66,109 +65,140 @@ export function FixturesPage({ navigate, params }: FixturesPageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <h1 className="font-heading text-3xl font-bold">Fixtures & Results</h1>
-        <p className="mt-1 text-muted-foreground">
-          All scheduled, live, and completed matches
-        </p>
-      </div>
-      <div className="mb-4">
-  <div className="flex flex-wrap items-center gap-3">
-    <Tabs value={activeTab} onValueChange={setActiveTab}>
-      <TabsList>
-        <TabsTrigger value="all" className="gap-1">
+  <div className="mb-6">
+    <h1 className="font-heading text-3xl font-bold">Fixtures & Results</h1>
+    <p className="mt-1 text-muted-foreground">
+      All scheduled, live, and completed matches
+    </p>
+  </div>
+
+  <div className="mb-4">
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-1 rounded-lg bg-muted p-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab('all')}
+          className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'all'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
           <Calendar className="h-3.5 w-3.5" />
           All
-        </TabsTrigger>
+        </button>
 
-        <TabsTrigger value="live" className="gap-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab('live')}
+          className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'live'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
           <Activity className="h-3.5 w-3.5" />
           Live
-        </TabsTrigger>
+        </button>
 
-        <TabsTrigger value="upcoming" className="gap-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab('upcoming')}
+          className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'upcoming'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
           <Calendar className="h-3.5 w-3.5" />
           Upcoming
-        </TabsTrigger>
+        </button>
 
-        <TabsTrigger value="results" className="gap-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab('results')}
+          className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'results'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
           <CheckCircle2 className="h-3.5 w-3.5" />
           Results
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
+        </button>
+      </div>
 
-    <div className="flex flex-wrap items-center gap-2">
-      <Select
-        value={fixtureTypeFilter}
-        onValueChange={setFixtureTypeFilter}
-      >
-        <SelectTrigger className="w-40">
-          <SelectValue placeholder="Fixture Type" />
-        </SelectTrigger>
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={fixtureTypeFilter}
+          onValueChange={setFixtureTypeFilter}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Fixture Type" />
+          </SelectTrigger>
 
-        <SelectContent>
-          <SelectItem value="all">All Fixtures</SelectItem>
-          <SelectItem value="player">Player Fixtures</SelectItem>
-          <SelectItem value="club">Club Fixtures</SelectItem>
-        </SelectContent>
-      </Select>
+          <SelectContent>
+            <SelectItem value="all">All Fixtures</SelectItem>
+            <SelectItem value="player">Player Fixtures</SelectItem>
+            <SelectItem value="club">Club Fixtures</SelectItem>
+          </SelectContent>
+        </Select>
 
-      <Select
-        value={disciplineFilter}
-        onValueChange={setDisciplineFilter}
-      >
-        <SelectTrigger className="w-40">
-          <SelectValue placeholder="Discipline" />
-        </SelectTrigger>
+        <Select
+          value={disciplineFilter}
+          onValueChange={setDisciplineFilter}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Discipline" />
+          </SelectTrigger>
 
-        <SelectContent>
-          <SelectItem value="all">All Disciplines</SelectItem>
+          <SelectContent>
+            <SelectItem value="all">All Disciplines</SelectItem>
 
-          {disciplines.map((d) => (
-            <SelectItem key={d.id} value={d.id}>
-              {d.icon_emoji} {d.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+            {disciplines.map((d) => (
+              <SelectItem key={d.id} value={d.id}>
+                {d.icon_emoji} {d.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
-  </div>
 
-  <div className="mt-4">
-    {loading ? (
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-32 animate-pulse rounded-xl bg-muted"
-          />
-        ))}
-      </div>
-    ) : filtered.length === 0 ? (
-      <div className="py-20 text-center">
-        <Calendar className="mx-auto h-12 w-12 text-muted-foreground/40" />
-        <p className="mt-4 text-muted-foreground">
-  {fixtureTypeFilter === 'player'
-    ? 'No player fixtures found.'
-    : fixtureTypeFilter === 'club'
-      ? 'No club fixtures found.'
-      : 'No fixtures found.'}
-</p>
-      </div>
-    ) : (
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        {filtered.map((fx) => (
-          <FixtureCard
-            key={fx.id}
-            fixture={fx}
-            navigate={navigate}
-          />
-        ))}
-      </div>
-    )}
+    <div className="mt-4">
+      {loading ? (
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-32 animate-pulse rounded-xl bg-muted"
+            />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="py-20 text-center">
+          <Calendar className="mx-auto h-12 w-12 text-muted-foreground/40" />
+          <p className="mt-4 text-muted-foreground">
+            {fixtureTypeFilter === 'player'
+              ? 'No player fixtures found.'
+              : fixtureTypeFilter === 'club'
+                ? 'No club fixtures found.'
+                : 'No fixtures found.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          {filtered.map((fx) => (
+            <FixtureCard
+              key={fx.id}
+              fixture={fx}
+              navigate={navigate}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   </div>
 </div>
-    </div>
   );
 }
