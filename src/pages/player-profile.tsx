@@ -5,9 +5,9 @@ import { FixtureCard } from '@/components/fixture-card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, MapPin, Trophy, Star, Target, TrendingUp, Calendar, CircleDot, Award } from 'lucide-react';
-import { winPercentage, getDisciplineLabel, formatDate } from '@/lib/constants';
-import type { Player, Match } from '@/types/db';
+import { ArrowLeft, MapPin, Trophy, Star, Target, TrendingUp, Calendar, CircleDot, Award, ArrowRight } from 'lucide-react';
+import { winPercentage, getDisciplineLabel, formatDate, formatDateTime, timeUntil } from '@/lib/constants';
+import type { Player, Match, Fixture } from '@/types/db';
 
 interface PlayerProfilePageProps {
   navigate: (to: string) => void;
@@ -17,6 +17,7 @@ interface PlayerProfilePageProps {
 export function PlayerProfilePage({ navigate, slug }: PlayerProfilePageProps) {
   const [player, setPlayer] = useState<Player | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [playerFixtures, setPlayerFixtures] = useState<Fixture[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +27,23 @@ export function PlayerProfilePage({ navigate, slug }: PlayerProfilePageProps) {
       `).eq('slug', slug).maybeSingle();
       if (!playerData) { setLoading(false); return; }
       setPlayer(playerData as Player);
+
+      // Get direct player fixtures (player vs player)
+      const [homeFxRes, awayFxRes] = await Promise.all([
+        supabase.from('fixtures').select(`
+          *, home_club:clubs!fixtures_home_club_id_fkey(*), away_club:clubs!fixtures_away_club_id_fkey(*),
+          home_player:players!fixtures_home_player_id_fkey(*), away_player:players!fixtures_away_player_id_fkey(*),
+          discipline:pool_disciplines!fixtures_discipline_id_fkey(*)
+        `).eq('fixture_type', 'player').eq('home_player_id', playerData.id).order('match_date', { ascending: true }).limit(10),
+        supabase.from('fixtures').select(`
+          *, home_club:clubs!fixtures_home_club_id_fkey(*), away_club:clubs!fixtures_away_club_id_fkey(*),
+          home_player:players!fixtures_home_player_id_fkey(*), away_player:players!fixtures_away_player_id_fkey(*),
+          discipline:pool_disciplines!fixtures_discipline_id_fkey(*)
+        `).eq('fixture_type', 'player').eq('away_player_id', playerData.id).order('match_date', { ascending: true }).limit(10),
+      ]);
+      const allFx = [...(homeFxRes.data ?? []), ...(awayFxRes.data ?? [])] as Fixture[];
+      allFx.sort((a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime());
+      setPlayerFixtures(allFx);
 
       // Get matches involving this player
       const [homeRes, awayRes] = await Promise.all([
@@ -152,6 +170,55 @@ export function PlayerProfilePage({ navigate, slug }: PlayerProfilePageProps) {
                 {getDisciplineLabel(d)}
               </span>
             ))}
+          </div>
+        )}
+
+        {/* Upcoming Player Fixtures */}
+        {playerFixtures.length > 0 && (
+          <div className="mt-8">
+            <h2 className="mb-4 font-heading text-xl font-bold">Player Fixtures</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {playerFixtures.map((fx) => {
+                const isHome = fx.home_player_id === player.id;
+                const opp = isHome ? fx.away_player : fx.home_player;
+                const isScheduled = fx.status === 'scheduled';
+                const isLive = fx.status === 'live';
+                const isCompleted = fx.status === 'completed';
+                const won = isCompleted && (
+                  (isHome && fx.home_score > fx.away_score) ||
+                  (!isHome && fx.away_score > fx.home_score)
+                );
+                return (
+                  <button
+                    key={fx.id}
+                    onClick={() => navigate(`/fixtures/${fx.id}`)}
+                    className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition-all hover:shadow-md ${
+                      isLive ? 'border-success/40 bg-success/5' : 'border-border bg-card hover:border-primary/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-muted-foreground">{fx.competition_name || 'Friendly'}{fx.round ? ` · ${fx.round}` : ''}</span>
+                      {isScheduled && <span className="text-[10px] font-bold uppercase text-primary">{timeUntil(fx.match_date)}</span>}
+                      {isLive && <span className="flex items-center gap-1 rounded-full bg-success px-1.5 py-0.5 text-[10px] font-bold uppercase text-success-foreground"><span className="h-1.5 w-1.5 rounded-full bg-success-foreground animate-pulse-dot" />Live</span>}
+                      {isCompleted && <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">Result</span>}
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`flex-1 font-heading text-sm font-bold text-center ${isCompleted && isHome && won ? 'text-success' : ''}`}>{fx.home_player?.name || 'TBD'}</span>
+                      {isScheduled ? (
+                        <span className="text-sm font-bold text-muted-foreground">VS</span>
+                      ) : (
+                        <span className={`font-heading text-lg font-bold ${isLive ? 'text-success' : ''}`}>{fx.home_score} - {fx.away_score}</span>
+                      )}
+                      <span className={`flex-1 font-heading text-sm font-bold text-center ${isCompleted && !isHome && won ? 'text-success' : ''}`}>{fx.away_player?.name || 'TBD'}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-border pt-2 text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {formatDateTime(fx.match_date)}</span>
+                      {fx.venue_city && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {fx.venue_city}</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/admin/empty-state';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Search, Calendar } from 'lucide-react';
 import { formatDate } from '@/lib/constants';
-import type { Fixture, Club, PoolDiscipline } from '@/types/db';
+import type { Fixture, Club, PoolDiscipline, Player } from '@/types/db';
 
 interface AdminFixturesProps {
   navigate: (to: string) => void;
@@ -23,6 +23,8 @@ interface FixtureFormData {
   fixture_type: string;
   home_club_id: string;
   away_club_id: string;
+  home_player_id: string;
+  away_player_id: string;
   discipline_id: string;
   competition_name: string;
   round: string;
@@ -38,6 +40,7 @@ interface FixtureFormData {
 
 const EMPTY_FORM: FixtureFormData = {
   fixture_number: '', fixture_type: 'club', home_club_id: 'none', away_club_id: 'none',
+  home_player_id: 'none', away_player_id: 'none',
   discipline_id: 'none', competition_name: '', round: '', venue_name: '', venue_city: '',
   match_date: '', status: 'scheduled', home_score: '0', away_score: '0', best_of_frames: '7',
   is_verified: false,
@@ -54,6 +57,7 @@ const STATUS_OPTIONS = [
 export function AdminFixtures({}: AdminFixturesProps) {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [disciplines, setDisciplines] = useState<PoolDiscipline[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -67,20 +71,33 @@ export function AdminFixtures({}: AdminFixturesProps) {
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
-    const [fxRes, clubsRes, discRes] = await Promise.all([
-      supabase.from('fixtures').select(`*, home_club:clubs!fixtures_home_club_id_fkey(*), away_club:clubs!fixtures_away_club_id_fkey(*), discipline:pool_disciplines!fixtures_discipline_id_fkey(*)`).order('match_date', { ascending: false }),
+    const [fxRes, clubsRes, playersRes, discRes] = await Promise.all([
+      supabase.from('fixtures').select(`*, home_club:clubs!fixtures_home_club_id_fkey(*), away_club:clubs!fixtures_away_club_id_fkey(*), home_player:players!fixtures_home_player_id_fkey(*), away_player:players!fixtures_away_player_id_fkey(*), discipline:pool_disciplines!fixtures_discipline_id_fkey(*)`).order('match_date', { ascending: false }),
       supabase.from('clubs').select('*').order('name'),
+      supabase.from('players').select('*').order('name'),
       supabase.from('pool_disciplines').select('*').order('sort_order'),
     ]);
     setFixtures((fxRes.data ?? []) as Fixture[]);
     setClubs(clubsRes.data ?? []);
+    setPlayers(playersRes.data ?? []);
     setDisciplines(discRes.data ?? []);
     setLoading(false);
   };
 
+  const isPlayerFixture = (f: Fixture) => f.fixture_type === 'player';
+  const fixtureLabel = (f: Fixture) => isPlayerFixture(f)
+    ? `${f.home_player?.name ?? 'TBD'} vs ${f.away_player?.name ?? 'TBD'}`
+    : `${f.home_club?.name ?? 'TBD'} vs ${f.away_club?.name ?? 'TBD'}`;
+
   const filtered = fixtures
     .filter((f) => statusFilter === 'all' || f.status === statusFilter)
-    .filter((f) => !search || (f.home_club?.name?.toLowerCase().includes(search.toLowerCase()) ?? false) || (f.away_club?.name?.toLowerCase().includes(search.toLowerCase()) ?? false) || (f.competition_name?.toLowerCase().includes(search.toLowerCase()) ?? false));
+    .filter((f) => !search ||
+      (f.home_club?.name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+      (f.away_club?.name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+      (f.home_player?.name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+      (f.away_player?.name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+      (f.competition_name?.toLowerCase().includes(search.toLowerCase()) ?? false)
+    );
 
   const openCreate = () => {
     const now = new Date();
@@ -96,6 +113,8 @@ export function AdminFixtures({}: AdminFixturesProps) {
       fixture_type: f.fixture_type,
       home_club_id: f.home_club_id ?? 'none',
       away_club_id: f.away_club_id ?? 'none',
+      home_player_id: f.home_player_id ?? 'none',
+      away_player_id: f.away_player_id ?? 'none',
       discipline_id: f.discipline_id ?? 'none',
       competition_name: f.competition_name ?? '',
       round: f.round ?? '',
@@ -115,11 +134,14 @@ export function AdminFixtures({}: AdminFixturesProps) {
   const handleSave = async () => {
     if (!form.match_date) { toast.error('Match date is required'); return; }
     setSaving(true);
+    const isPlayer = form.fixture_type === 'player';
     const payload: Record<string, any> = {
       fixture_number: form.fixture_number.trim() || null,
       fixture_type: form.fixture_type,
-      home_club_id: form.home_club_id === 'none' ? null : form.home_club_id,
-      away_club_id: form.away_club_id === 'none' ? null : form.away_club_id,
+      home_club_id: isPlayer ? null : (form.home_club_id === 'none' ? null : form.home_club_id),
+      away_club_id: isPlayer ? null : (form.away_club_id === 'none' ? null : form.away_club_id),
+      home_player_id: isPlayer ? (form.home_player_id === 'none' ? null : form.home_player_id) : null,
+      away_player_id: isPlayer ? (form.away_player_id === 'none' ? null : form.away_player_id) : null,
       discipline_id: form.discipline_id === 'none' ? null : form.discipline_id,
       competition_name: form.competition_name.trim() || null,
       round: form.round.trim() || null,
@@ -194,7 +216,7 @@ export function AdminFixtures({}: AdminFixturesProps) {
                 <div className="flex flex-1 items-center gap-3 min-w-0">
                   <span className={`flex-shrink-0 rounded px-2 py-0.5 text-[10px] font-bold uppercase ${statusColor(f.status)}`}>{f.status}</span>
                   <div className="min-w-0">
-                    <p className="font-medium truncate">{f.home_club?.name ?? 'TBD'} vs {f.away_club?.name ?? 'TBD'}</p>
+                    <p className="font-medium truncate">{fixtureLabel(f)}</p>
                     <p className="text-xs text-muted-foreground truncate">
                       {f.competition_name ?? 'Friendly'} · {formatDate(f.match_date)} · {f.home_score}-{f.away_score}
                     </p>
@@ -216,42 +238,24 @@ export function AdminFixtures({}: AdminFixturesProps) {
               <div className="space-y-2"><Label>Fixture Type</Label><Select value={form.fixture_type} onValueChange={(v) => setForm({ ...form, fixture_type: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="club">Club vs Club</SelectItem><SelectItem value="player">Player vs Player</SelectItem></SelectContent></Select></div>
               <div className="space-y-2"><Label>Fixture Number</Label><Input value={form.fixture_number} onChange={(e) => setForm({ ...form, fixture_number: e.target.value })} placeholder="FX-001" /></div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2"><Label>Home Club</Label><Select value={form.home_club_id} onValueChange={(v) => setForm({ ...form, home_club_id: v })}><SelectTrigger><SelectValue placeholder="Select club" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{clubs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-2"><Label>Away Club</Label><Select value={form.away_club_id} onValueChange={(v) => setForm({ ...form, away_club_id: v })}><SelectTrigger><SelectValue placeholder="Select club" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{clubs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
-            </div>
+            {form.fixture_type === 'club' ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2"><Label>Home Club</Label><Select value={form.home_club_id} onValueChange={(v) => setForm({ ...form, home_club_id: v })}><SelectTrigger><SelectValue placeholder="Select club" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{clubs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-2"><Label>Away Club</Label><Select value={form.away_club_id} onValueChange={(v) => setForm({ ...form, away_club_id: v })}><SelectTrigger><SelectValue placeholder="Select club" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{clubs.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2"><Label>Home Player</Label><Select value={form.home_player_id} onValueChange={(v) => setForm({ ...form, home_player_id: v })}><SelectTrigger><SelectValue placeholder="Select player" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{players.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-2"><Label>Away Player</Label><Select value={form.away_player_id} onValueChange={(v) => setForm({ ...form, away_player_id: v })}><SelectTrigger><SelectValue placeholder="Select player" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{players.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
+              </div>
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2"><Label>Discipline</Label><Select value={form.discipline_id} onValueChange={(v) => setForm({ ...form, discipline_id: v })}><SelectTrigger><SelectValue placeholder="Select discipline" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{disciplines.map((d) => <SelectItem key={d.id} value={d.id}>{d.icon_emoji} {d.name}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-2"><Label>Status</Label><Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2"><Label>Competition Name</Label><Input value={form.competition_name} onChange={(e) => setForm({ ...form, competition_name: e.target.value })} placeholder="Nairobi Open Cup" /></div>
-              <div className="space-y-2">
-  <Label>Round</Label>
-  <Select
-    value={form.round}
-    onValueChange={(v) => setForm({ ...form, round: v })}
-  >
-    <SelectTrigger>
-      <SelectValue placeholder="Select round" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="Qualifier">Qualifier</SelectItem>
-      <SelectItem value="Group Stage">Group Stage</SelectItem>
-      <SelectItem value="Round of 64">Round of 64</SelectItem>
-      <SelectItem value="Round of 32">Round of 32</SelectItem>
-      <SelectItem value="Round of 16">Round of 16</SelectItem>
-      <SelectItem value="Quarter-final">Quarter-final</SelectItem>
-      <SelectItem value="Semi-final">Semi-final</SelectItem>
-      <SelectItem value="Third-place Playoff">Third-place Playoff</SelectItem>
-      <SelectItem value="Final">Final</SelectItem>
-      <SelectItem value="Friendly">Friendly</SelectItem>
-      <SelectItem value="Losers Round 2">Losers Round 2</SelectItem>
-      <SelectItem value="Winners Final">Winners Final</SelectItem>
-      <SelectItem value="Money Round">Money Round</SelectItem>
-    </SelectContent>
-  </Select>
-</div>
+              <div className="space-y-2"><Label>Round</Label><Input value={form.round} onChange={(e) => setForm({ ...form, round: e.target.value })} placeholder="Quarter Final" /></div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2"><Label>Venue Name</Label><Input value={form.venue_name} onChange={(e) => setForm({ ...form, venue_name: e.target.value })} placeholder="Shark Pool Hall" /></div>

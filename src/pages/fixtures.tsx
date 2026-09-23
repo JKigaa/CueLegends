@@ -26,6 +26,7 @@ export function FixturesPage({ navigate, params }: FixturesPageProps) {
 
       const { data } = await supabase.from('fixtures').select(`
         *, home_club:clubs!fixtures_home_club_id_fkey(*), away_club:clubs!fixtures_away_club_id_fkey(*),
+        home_player:players!fixtures_home_player_id_fkey(*), away_player:players!fixtures_away_player_id_fkey(*),
         discipline:pool_disciplines!fixtures_discipline_id_fkey(*)
       `).order('match_date', { ascending: false }).limit(50);
       setFixtures((data ?? []) as Fixture[]);
@@ -43,21 +44,19 @@ export function FixturesPage({ navigate, params }: FixturesPageProps) {
     .filter((f) => disciplineFilter === 'all' || f.discipline_id === disciplineFilter);
 
   return (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-6">
+        <h1 className="font-heading text-3xl font-bold">Fixtures & Results</h1>
+        <p className="mt-1 text-muted-foreground">All scheduled, live, and completed matches</p>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="all" className="gap-1">
-              <Calendar className="h-3.5 w-3.5" /> All
-            </TabsTrigger>
-            <TabsTrigger value="live" className="gap-1">
-              <Activity className="h-3.5 w-3.5" /> Live
-            </TabsTrigger>
-            <TabsTrigger value="upcoming" className="gap-1">
-              <Calendar className="h-3.5 w-3.5" /> Upcoming
-            </TabsTrigger>
-            <TabsTrigger value="results" className="gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Results
-            </TabsTrigger>
+            <TabsTrigger value="all" className="gap-1"><Calendar className="h-3.5 w-3.5" /> All</TabsTrigger>
+            <TabsTrigger value="live" className="gap-1"><Activity className="h-3.5 w-3.5" /> Live</TabsTrigger>
+            <TabsTrigger value="upcoming" className="gap-1"><Calendar className="h-3.5 w-3.5" /> Upcoming</TabsTrigger>
+            <TabsTrigger value="results" className="gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Results</TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-0">
@@ -83,18 +82,16 @@ export function FixturesPage({ navigate, params }: FixturesPageProps) {
         </Tabs>
 
         <Select value={disciplineFilter} onValueChange={setDisciplineFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Discipline" />
-          </SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Discipline" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Disciplines</SelectItem>
             {disciplines.map((d) => (
-              <SelectItem key={d.id} value={d.id}>
-                {d.icon_emoji} {d.name}
-              </SelectItem>
+              <SelectItem key={d.id} value={d.id}>{d.icon_emoji} {d.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
+
+    </div>
   );
 }

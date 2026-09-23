@@ -21,6 +21,7 @@ export function FixtureDetailPage({ navigate, fixtureId }: FixtureDetailPageProp
     (async () => {
       const { data: fxData } = await supabase.from('fixtures').select(`
         *, home_club:clubs!fixtures_home_club_id_fkey(*), away_club:clubs!fixtures_away_club_id_fkey(*),
+        home_player:players!fixtures_home_player_id_fkey(*), away_player:players!fixtures_away_player_id_fkey(*),
         discipline:pool_disciplines!fixtures_discipline_id_fkey(*)
       `).eq('id', fixtureId).maybeSingle();
       if (!fxData) { setLoading(false); return; }
@@ -58,8 +59,15 @@ export function FixtureDetailPage({ navigate, fixtureId }: FixtureDetailPageProp
 
   const isLive = fixture.status === 'live';
   const isCompleted = fixture.status === 'completed';
+  const isPlayerFixture = fixture.fixture_type === 'player';
   const homeWon = fixture.home_score > fixture.away_score;
   const awayWon = fixture.away_score > fixture.home_score;
+  const homeName = isPlayerFixture ? fixture.home_player?.name || 'TBD' : fixture.home_club?.name || 'TBD';
+  const awayName = isPlayerFixture ? fixture.away_player?.name || 'TBD' : fixture.away_club?.name || 'TBD';
+  const homeSlug = isPlayerFixture ? fixture.home_player?.slug : fixture.home_club?.slug;
+  const awaySlug = isPlayerFixture ? fixture.away_player?.slug : fixture.away_club?.slug;
+  const homeLink = isPlayerFixture ? (homeSlug ? `/players/${homeSlug}` : null) : (homeSlug ? `/clubs/${homeSlug}` : null);
+  const awayLink = isPlayerFixture ? (awaySlug ? `/players/${awaySlug}` : null) : (awaySlug ? `/clubs/${awaySlug}` : null);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
@@ -96,15 +104,24 @@ export function FixtureDetailPage({ navigate, fixtureId }: FixtureDetailPageProp
 
         {/* Score display */}
         <div className="flex items-center justify-between gap-4">
-          <button
-            onClick={() => fixture.home_club && navigate(`/clubs/${fixture.home_club.slug}`)}
-            className="flex flex-1 flex-col items-center gap-2"
-          >
-            <div className="h-14 w-14 rounded-xl felt-bg flex items-center justify-center text-2xl">🎱</div>
-            <span className={`font-heading text-sm font-bold text-center ${homeWon && isCompleted ? 'text-success' : ''}`}>
-              {fixture.home_club?.name || 'TBD'}
-            </span>
-          </button>
+          {homeLink ? (
+            <button
+              onClick={() => navigate(homeLink)}
+              className="flex flex-1 flex-col items-center gap-2"
+            >
+              <div className="h-14 w-14 rounded-xl felt-bg flex items-center justify-center text-2xl">🎱</div>
+              <span className={`font-heading text-sm font-bold text-center ${homeWon && isCompleted ? 'text-success' : ''}`}>
+                {homeName}
+              </span>
+            </button>
+          ) : (
+            <div className="flex flex-1 flex-col items-center gap-2">
+              <div className="h-14 w-14 rounded-xl felt-bg flex items-center justify-center text-2xl">🎱</div>
+              <span className={`font-heading text-sm font-bold text-center ${homeWon && isCompleted ? 'text-success' : ''}`}>
+                {homeName}
+              </span>
+            </div>
+          )}
 
           <div className="flex flex-shrink-0 items-center gap-3">
             {fixture.status === 'scheduled' ? (
@@ -122,15 +139,24 @@ export function FixtureDetailPage({ navigate, fixtureId }: FixtureDetailPageProp
             )}
           </div>
 
-          <button
-            onClick={() => fixture.away_club && navigate(`/clubs/${fixture.away_club.slug}`)}
-            className="flex flex-1 flex-col items-center gap-2"
-          >
-            <div className="h-14 w-14 rounded-xl felt-bg flex items-center justify-center text-2xl">🎱</div>
-            <span className={`font-heading text-sm font-bold text-center ${awayWon && isCompleted ? 'text-success' : ''}`}>
-              {fixture.away_club?.name || 'TBD'}
-            </span>
-          </button>
+          {awayLink ? (
+            <button
+              onClick={() => navigate(awayLink)}
+              className="flex flex-1 flex-col items-center gap-2"
+            >
+              <div className="h-14 w-14 rounded-xl felt-bg flex items-center justify-center text-2xl">🎱</div>
+              <span className={`font-heading text-sm font-bold text-center ${awayWon && isCompleted ? 'text-success' : ''}`}>
+                {awayName}
+              </span>
+            </button>
+          ) : (
+            <div className="flex flex-1 flex-col items-center gap-2">
+              <div className="h-14 w-14 rounded-xl felt-bg flex items-center justify-center text-2xl">🎱</div>
+              <span className={`font-heading text-sm font-bold text-center ${awayWon && isCompleted ? 'text-success' : ''}`}>
+                {awayName}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Meta */}

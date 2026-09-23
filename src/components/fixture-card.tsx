@@ -11,11 +11,20 @@ export function FixtureCard({ fixture, navigate }: FixtureCardProps) {
   const isLive = fixture.status === 'live';
   const isCompleted = fixture.status === 'completed';
   const isScheduled = fixture.status === 'scheduled';
+  const isPlayerFixture = fixture.fixture_type === 'player';
 
-  const homeName = fixture.home_club?.short_name || fixture.home_club?.name || 'TBD';
-  const awayName = fixture.away_club?.short_name || fixture.away_club?.name || 'TBD';
-  const homeFullName = fixture.home_club?.name || 'TBD';
-  const awayFullName = fixture.away_club?.name || 'TBD';
+  const homeName = isPlayerFixture
+    ? fixture.home_player?.name || 'TBD'
+    : fixture.home_club?.short_name || fixture.home_club?.name || 'TBD';
+  const awayName = isPlayerFixture
+    ? fixture.away_player?.name || 'TBD'
+    : fixture.away_club?.short_name || fixture.away_club?.name || 'TBD';
+  const homeFullName = isPlayerFixture
+    ? fixture.home_player?.name || 'TBD'
+    : fixture.home_club?.name || 'TBD';
+  const awayFullName = isPlayerFixture
+    ? fixture.away_player?.name || 'TBD'
+    : fixture.away_club?.name || 'TBD';
 
   return (
     <button
@@ -30,6 +39,7 @@ export function FixtureCard({ fixture, navigate }: FixtureCardProps) {
       <div className="flex items-center justify-between text-xs">
         <span className="font-medium text-muted-foreground">
           {fixture.competition_name || 'Friendly'}
+          {fixture.round ? ` · ${fixture.round}` : ''}
         </span>
         {isLive && (
           <span className="flex items-center gap-1.5 rounded-full bg-success px-2 py-0.5 text-[10px] font-bold uppercase text-success-foreground">
@@ -53,7 +63,9 @@ export function FixtureCard({ fixture, navigate }: FixtureCardProps) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-1 flex-col items-center gap-1">
           <span className="font-heading text-sm font-bold text-foreground text-center">{homeName}</span>
-          <span className="text-[10px] text-muted-foreground">{homeFullName}</span>
+          {isPlayerFixture && homeName !== homeFullName && (
+            <span className="text-[10px] text-muted-foreground">{homeFullName}</span>
+          )}
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2">
@@ -74,7 +86,9 @@ export function FixtureCard({ fixture, navigate }: FixtureCardProps) {
 
         <div className="flex flex-1 flex-col items-center gap-1">
           <span className="font-heading text-sm font-bold text-foreground text-center">{awayName}</span>
-          <span className="text-[10px] text-muted-foreground">{awayFullName}</span>
+          {isPlayerFixture && awayName !== awayFullName && (
+            <span className="text-[10px] text-muted-foreground">{awayFullName}</span>
+          )}
         </div>
       </div>
 
