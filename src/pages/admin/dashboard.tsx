@@ -45,11 +45,13 @@ export function AdminDashboard({ navigate }: AdminDashboardProps) {
         countries: countries.count ?? 0,
       });
 
-      const { data: recent } = await supabase.from('fixtures').select(`
-        id, status, match_date, competition_name,
-        home_club:clubs!fixtures_home_club_id_fkey(name),
-        away_club:clubs!fixtures_away_club_id_fkey(name)
-      `).order('match_date', { ascending: false }).limit(5);
+     const { data: recent } = await supabase.from('fixtures').select(`
+  id, status, match_date, competition_name, fixture_type,
+  home_club:clubs!fixtures_home_club_id_fkey(name),
+  away_club:clubs!fixtures_away_club_id_fkey(name),
+  home_player:players!fixtures_home_player_id_fkey(name),
+  away_player:players!fixtures_away_player_id_fkey(name)
+`).order('match_date', { ascending: false }).limit(5);
       setRecentFixtures(recent ?? []);
     })();
   }, []);
@@ -121,7 +123,9 @@ export function AdminDashboard({ navigate }: AdminDashboardProps) {
                     'bg-primary'
                   }`} />
                   <span className="font-medium">
-                    {fx.home_club?.name ?? 'TBD'} vs {fx.away_club?.name ?? 'TBD'}
+                    {fx.fixture_type === 'player'
+  ? `${fx.home_player?.name ?? 'TBD'} vs ${fx.away_player?.name ?? 'TBD'}`
+  : `${fx.home_club?.name ?? 'TBD'} vs ${fx.away_club?.name ?? 'TBD'}`}
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground capitalize">
