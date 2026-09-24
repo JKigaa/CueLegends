@@ -58,7 +58,7 @@ export function AdminMatches({}: AdminMatchesProps) {
     const [mRes, pRes, fRes] = await Promise.all([
       supabase.from('matches').select(`*, home_player:players!matches_home_player_id_fkey(name), away_player:players!matches_away_player_id_fkey(name), fixture:fixtures(competition_name)`).order('created_at', { ascending: false }),
       supabase.from('players').select('*').order('name'),
-      supabase.from('fixtures').select('id, competition_name, match_date').order('match_date', { ascending: false }).limit(100),
+      supabase.from('fixtures').select('id, competition_name, match_date, fixture_type, home_player_id, away_player_id').order('match_date', { ascending: false }).limit(100),
     ]);
     setMatches((mRes.data ?? []) as Match[]);
     setPlayers((pRes.data ?? []) as Player[]);
@@ -69,6 +69,27 @@ export function AdminMatches({}: AdminMatchesProps) {
   const filtered = matches.filter((m) =>
     !search || (m.home_player?.name?.toLowerCase().includes(search.toLowerCase()) ?? false) || (m.away_player?.name?.toLowerCase().includes(search.toLowerCase()) ?? false)
   );
+
+const handleFixtureChange = (fixtureId: string) => {
+  const fixture = fixtures.find((f) => f.id === fixtureId);
+
+  if (!fixture) {
+    setForm({
+      ...form,
+      fixture_id: fixtureId,
+      home_player_id: 'none',
+      away_player_id: 'none',
+    });
+    return;
+  }
+
+  setForm({
+    ...form,
+    fixture_id: fixtureId,
+    home_player_id: fixture.home_player_id ?? 'none',
+    away_player_id: fixture.away_player_id ?? 'none',
+  });
+};
 
   const openCreate = () => { setForm(EMPTY_FORM); setEditingId(null); setDialogOpen(true); };
 
@@ -163,14 +184,14 @@ export function AdminMatches({}: AdminMatchesProps) {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editingId ? 'Edit Match' : 'Add New Match'}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="space-y-2"><Label>Fixture *</Label><Select value={form.fixture_id} onValueChange={(v) => setForm({ ...form, fixture_id: v })}><SelectTrigger><SelectValue placeholder="Select fixture" /></SelectTrigger><SelectContent>{fixtures.map((f) => <SelectItem key={f.id} value={f.id}>{fixtureLabel(f)}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Fixture *</Label><Select value={form.fixture_id} onValueChange={handleFixtureChange}><SelectTrigger><SelectValue placeholder="Select fixture" /></SelectTrigger><SelectContent>{fixtures.map((f) => <SelectItem key={f.id} value={f.id}>{fixtureLabel(f)}</SelectItem>)}</SelectContent></Select></div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2"><Label>Match Number</Label><Input type="number" value={form.match_number} onChange={(e) => setForm({ ...form, match_number: e.target.value })} /></div>
               <div className="space-y-2"><Label>Status</Label><Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2"><Label>Home Player</Label><Select value={form.home_player_id} onValueChange={(v) => setForm({ ...form, home_player_id: v })}><SelectTrigger><SelectValue placeholder="Select player" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{players.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-2"><Label>Away Player</Label><Select value={form.away_player_id} onValueChange={(v) => setForm({ ...form, away_player_id: v })}><SelectTrigger><SelectValue placeholder="Select player" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{players.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>Home Player</Label><Select value={form.home_player_id} onValueChange={(v) => setForm({ ...form, home_player_id: v })} disabled={form.fixture_id !== 'none'}><SelectTrigger><SelectValue placeholder="Select player" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{players.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>Away Player</Label><Select value={form.away_player_id} onValueChange={(v) => setForm({ ...form, away_player_id: v })} disabled={form.fixture_id !== 'none'}><SelectTrigger><SelectValue placeholder="Select player" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{players.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2"><Label>Home Score</Label><Input type="number" value={form.home_score} onChange={(e) => setForm({ ...form, home_score: e.target.value })} /></div>

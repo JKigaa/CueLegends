@@ -1,134 +1,119 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Lock, Mail } from 'lucide-react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface AdminLoginProps {
-  navigate: (to: string) => void;
+  navigate: (path: string) => void;
 }
 
 export function AdminLogin({ navigate }: AdminLoginProps) {
-  const { signIn, signUp, user, loading } = useAuth();
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const { signIn, user, loading, isAdmin, adminLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && !adminLoading && user && isAdmin) {
       navigate('/admin');
     }
-  }, [user, loading, navigate]);
+  }, [loading, adminLoading, user, isAdmin, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!email.trim() || !password.trim()) {
-      setError('Please enter both email and password.');
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError('');
+    setSubmitting(true);
+
+    const result = await signIn(email.trim(), password);
+
+    if (result.error) {
+      setError(result.error);
+      setSubmitting(false);
       return;
     }
-    setSubmitting(true);
-    const { error: err } = mode === 'signin'
-      ? await signIn(email.trim(), password)
-      : await signUp(email.trim(), password);
+
     setSubmitting(false);
-    if (err) {
-      setError(err);
-    }
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-muted/30 to-accent/5 p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl felt-bg text-2xl">🎱</div>
-          <h1 className="font-heading text-2xl font-bold">CueLeague Admin</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Sign in to manage your platform</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {mode === 'signin' ? 'Sign In' : 'Create Admin Account'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@example.com"
-                    className="pl-9"
-                    disabled={submitting}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="pl-9"
-                    disabled={submitting}
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <Button type="submit" className="w-full" disabled={submitting || loading}>
-                {submitting ? 'Please wait...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-              </Button>
-            </form>
-
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => {
-                  setMode(mode === 'signin' ? 'signup' : 'signin');
-                  setError(null);
-                }}
-                className="text-sm text-muted-foreground transition-colors hover:text-primary"
-              >
-                {mode === 'signin'
-                  ? "Don't have an account? Sign up"
-                  : 'Already have an account? Sign in'}
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate('/')}
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            ← Back to CueLeague
-          </button>
+  if (loading || (user && adminLoading)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+        <div className="text-center">
+          <div className="mb-3 text-3xl">🎱</div>
+          <p className="text-sm text-muted-foreground">
+            Checking admin access...
+          </p>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">CueLegends Admin</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Sign in with your administrator account.
+          </p>
+        </CardHeader>
+
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="admin-email" className="text-sm font-medium">
+                Email
+              </label>
+              <Input
+                id="admin-email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="admin@example.com"
+                autoComplete="email"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="admin-password" className="text-sm font-medium">
+                Password
+              </label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? 'Signing In...' : 'Sign In'}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Back to CueLegends
+            </button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-

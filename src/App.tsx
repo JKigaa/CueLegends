@@ -68,23 +68,53 @@ export default function App() {
     }
 
     // All other admin pages require authentication
-    if (auth.loading) {
+        // All other admin pages require an authenticated administrator
+    if (auth.loading || auth.adminLoading) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-muted/30">
           <div className="text-center">
             <div className="mb-3 text-3xl">🎱</div>
-            <p className="text-sm text-muted-foreground">Loading admin panel...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading admin panel...
+            </p>
           </div>
         </div>
       );
     }
 
+    // Not signed in — send to admin login
     if (!auth.user) {
       return (
         <>
           <AdminLogin navigate={navigate} />
           <Toaster richColors position="bottom-right" />
         </>
+      );
+    }
+
+    // Signed in but not an administrator — deny access
+    if (!auth.isAdmin) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+          <div className="w-full max-w-md rounded-xl border bg-background p-8 text-center shadow-sm">
+            <div className="mb-4 text-4xl">🔒</div>
+            <h1 className="text-xl font-semibold">Admin Access Required</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This area is restricted to CueLegends administrators.
+            </p>
+            <button
+              type="button"
+              onClick={async () => {
+                await auth.signOut();
+                navigate('/admin/login');
+              }}
+              className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Return to Admin Login
+            </button>
+          </div>
+          <Toaster richColors position="bottom-right" />
+        </div>
       );
     }
 
@@ -104,13 +134,17 @@ export default function App() {
 
     return (
       <>
-        <AdminLayout navigate={navigate} activeSection={activeSection} onSignOut={auth.signOut}>
+        <AdminLayout
+          navigate={navigate}
+          activeSection={activeSection}
+          onSignOut={auth.signOut}
+        >
           {renderAdminPage()}
         </AdminLayout>
         <Toaster richColors position="bottom-right" />
       </>
     );
-  }
+    }
 
   // Public routes
   function renderPage() {
