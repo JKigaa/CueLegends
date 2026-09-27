@@ -23,6 +23,7 @@ import { AdminMatches } from '@/pages/admin/admin-matches';
 import { AdminRankings } from '@/pages/admin/admin-rankings';
 import { AdminDisciplines } from '@/pages/admin/admin-disciplines';
 import { AdminCountries } from '@/pages/admin/admin-countries';
+import AdminAdmins from '@/pages/admin/admin-admins';
 import { PLATFORM_NAME } from '@/lib/constants';
 
 export default function App() {
@@ -46,18 +47,19 @@ export default function App() {
       '/admin/rankings': 'Manage Rankings — CueLeague Admin',
       '/admin/disciplines': 'Manage Disciplines — CueLeague Admin',
       '/admin/countries': 'Manage Countries — CueLeague Admin',
+      '/admin/admins': 'Manage Administrators — CueLeague Admin',
       '/admin/login': 'Admin Login — CueLeague',
     };
-    document.title = titles[path] ?? `${PLATFORM_NAME} — Global Pool Sports Platform`;
+
+    document.title =
+      titles[path] ?? `${PLATFORM_NAME} — Global Pool Sports Platform`;
   }, [path]);
 
   const top = segments[0] ?? '';
 
-  // Admin routes — handle separately, no public navbar/footer
   if (top === 'admin') {
     const sub = segments[1] ?? '';
 
-    // Login page — no auth required
     if (sub === 'login') {
       return (
         <>
@@ -67,8 +69,6 @@ export default function App() {
       );
     }
 
-    // All other admin pages require authentication
-        // All other admin pages require an authenticated administrator
     if (auth.loading || auth.adminLoading) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-muted/30">
@@ -82,7 +82,6 @@ export default function App() {
       );
     }
 
-    // Not signed in — send to admin login
     if (!auth.user) {
       return (
         <>
@@ -92,7 +91,6 @@ export default function App() {
       );
     }
 
-    // Signed in but not an administrator — deny access
     if (!auth.isAdmin) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
@@ -127,8 +125,16 @@ export default function App() {
       if (sub === 'fixtures') return <AdminFixtures navigate={navigate} />;
       if (sub === 'matches') return <AdminMatches navigate={navigate} />;
       if (sub === 'rankings') return <AdminRankings navigate={navigate} />;
-      if (sub === 'disciplines') return <AdminDisciplines navigate={navigate} />;
-      if (sub === 'countries') return <AdminCountries navigate={navigate} />;
+      if (sub === 'disciplines') {
+        return <AdminDisciplines navigate={navigate} />;
+      }
+      if (sub === 'countries') {
+        return <AdminCountries navigate={navigate} />;
+      }
+      if (sub === 'admins') {
+        return <AdminAdmins />;
+      }
+
       return <AdminDashboard navigate={navigate} />;
     }
 
@@ -144,19 +150,54 @@ export default function App() {
         <Toaster richColors position="bottom-right" />
       </>
     );
-    }
+  }
 
-  // Public routes
   function renderPage() {
     if (top === '') return <HomePage navigate={navigate} />;
-    if (top === 'clubs' && segments[1]) return <ClubProfilePage navigate={navigate} slug={segments[1]} />;
+
+    if (top === 'clubs' && segments[1]) {
+      return (
+        <ClubProfilePage
+          navigate={navigate}
+          slug={segments[1]}
+        />
+      );
+    }
+
     if (top === 'clubs') return <ClubsPage navigate={navigate} />;
-    if (top === 'players' && segments[1]) return <PlayerProfilePage navigate={navigate} slug={segments[1]} />;
+
+    if (top === 'players' && segments[1]) {
+      return (
+        <PlayerProfilePage
+          navigate={navigate}
+          slug={segments[1]}
+        />
+      );
+    }
+
     if (top === 'players') return <PlayersPage navigate={navigate} />;
-    if (top === 'fixtures' && segments[1]) return <FixtureDetailPage navigate={navigate} fixtureId={segments[1]} />;
-    if (top === 'fixtures') return <FixturesPage navigate={navigate} params={params} />;
-    if (top === 'rankings') return <RankingsPage navigate={navigate} />;
-    if (top === 'search') return <SearchPage navigate={navigate} params={params} />;
+
+    if (top === 'fixtures' && segments[1]) {
+      return (
+        <FixtureDetailPage
+          navigate={navigate}
+          fixtureId={segments[1]}
+        />
+      );
+    }
+
+    if (top === 'fixtures') {
+      return <FixturesPage navigate={navigate} params={params} />;
+    }
+
+    if (top === 'rankings') {
+      return <RankingsPage navigate={navigate} />;
+    }
+
+    if (top === 'search') {
+      return <SearchPage navigate={navigate} params={params} />;
+    }
+
     return <HomePage navigate={navigate} />;
   }
 
