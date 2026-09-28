@@ -11,6 +11,8 @@ export function FixtureCard({ fixture, navigate }: FixtureCardProps) {
   const isLive = fixture.status === 'live';
   const isCompleted = fixture.status === 'completed';
   const isScheduled = fixture.status === 'scheduled';
+  const isPostponed = fixture.status === 'postponed';
+  const isCancelled = fixture.status === 'cancelled';
   const isPlayerFixture = fixture.fixture_type === 'player';
 
   const homeName = isPlayerFixture
@@ -32,28 +34,33 @@ export function FixtureCard({ fixture, navigate }: FixtureCardProps) {
     }
   };
 
+  const isUnavailable = isPostponed || isCancelled;
+
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={() => navigate(`/fixtures/${fixture.id}`)}
+      onClick={() => navigate('/fixtures/' + fixture.id)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          navigate(`/fixtures/${fixture.id}`);
+          navigate('/fixtures/' + fixture.id);
         }
       }}
-      className={`group flex cursor-pointer flex-col gap-3 rounded-xl border p-4 text-left transition-all duration-300 hover:shadow-lg ${
-        isLive
+      className={
+        'group flex cursor-pointer flex-col gap-3 rounded-xl border p-4 text-left transition-all duration-300 hover:shadow-lg ' +
+        (isLive
           ? 'border-success/40 bg-success/5'
-          : 'border-border bg-card hover:border-primary/30'
-      }`}
+          : isUnavailable
+            ? 'border-muted bg-muted/20'
+            : 'border-border bg-card hover:border-primary/30')
+      }
     >
       {/* Header */}
       <div className="flex items-center justify-between text-xs">
         <span className="font-medium text-muted-foreground">
           {fixture.competition_name || 'Friendly'}
-          {fixture.round ? ` · ${fixture.round}` : ''}
+          {fixture.round ? ' · ' + fixture.round : ''}
         </span>
 
         {isLive && (
@@ -74,55 +81,64 @@ export function FixtureCard({ fixture, navigate }: FixtureCardProps) {
             {timeUntil(fixture.match_date)}
           </span>
         )}
+
+        {isPostponed && (
+          <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase text-secondary-foreground">
+            Postponed
+          </span>
+        )}
+
+        {isCancelled && (
+          <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold uppercase text-destructive">
+            Cancelled
+          </span>
+        )}
       </div>
 
-      {/* Score / Teams */}
+      {/* Score / Participants */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-1 flex-col items-center gap-1">
-          {isPlayerFixture ? (
-            <button
-              type="button"
-              onClick={(event) =>
-                handleParticipantClick(
-                  event,
-                  fixture.home_player?.slug
-                    ? `/players/${fixture.home_player.slug}`
+          <button
+            type="button"
+            onClick={(event) =>
+              handleParticipantClick(
+                event,
+                isPlayerFixture
+                  ? fixture.home_player?.slug
+                    ? '/players/' + fixture.home_player.slug
+                    : null
+                  : fixture.home_club?.slug
+                    ? '/clubs/' + fixture.home_club.slug
                     : null,
-                )
-              }
-              disabled={!fixture.home_player?.slug}
-              className="font-heading text-center text-sm font-bold text-foreground transition-colors hover:text-primary hover:underline disabled:cursor-default disabled:hover:text-foreground disabled:hover:no-underline"
-            >
-              {homeName}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={(event) =>
-                handleParticipantClick(
-                  event,
-                  fixture.home_club?.slug
-                    ? `/clubs/${fixture.home_club.slug}`
-                    : null,
-                )
-              }
-              disabled={!fixture.home_club?.slug}
-              className="font-heading text-center text-sm font-bold text-foreground transition-colors hover:text-primary hover:underline disabled:cursor-default disabled:hover:text-foreground disabled:hover:no-underline"
-            >
-              {homeName}
-            </button>
-          )}
+              )
+            }
+            disabled={
+              isPlayerFixture
+                ? !fixture.home_player?.slug
+                : !fixture.home_club?.slug
+            }
+            className="font-heading text-center text-sm font-bold text-foreground transition-colors hover:text-primary hover:underline disabled:cursor-default disabled:hover:text-foreground disabled:hover:no-underline"
+          >
+            {homeName}
+          </button>
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2">
           {isScheduled ? (
-            <span className="text-lg font-bold text-muted-foreground">VS</span>
+            <span className="text-lg font-bold text-muted-foreground">
+              VS
+            </span>
+          ) : isUnavailable ? (
+            <span className="text-xs font-bold uppercase text-muted-foreground">
+              {isCancelled ? 'Cancelled' : 'Postponed'}
+            </span>
           ) : (
             <>
               <span
-                className={`font-heading text-2xl font-bold ${
-                  isLive ? 'text-success' : 'text-foreground'
-                }`}
+                className={
+                  'font-heading text-2xl font-bold ' +
+                  (isLive ? 'text-success' : 'text-foreground')
+                }
               >
                 {fixture.home_score}
               </span>
@@ -130,9 +146,10 @@ export function FixtureCard({ fixture, navigate }: FixtureCardProps) {
               <span className="text-sm text-muted-foreground">-</span>
 
               <span
-                className={`font-heading text-2xl font-bold ${
-                  isLive ? 'text-success' : 'text-foreground'
-                }`}
+                className={
+                  'font-heading text-2xl font-bold ' +
+                  (isLive ? 'text-success' : 'text-foreground')
+                }
               >
                 {fixture.away_score}
               </span>
@@ -141,39 +158,29 @@ export function FixtureCard({ fixture, navigate }: FixtureCardProps) {
         </div>
 
         <div className="flex flex-1 flex-col items-center gap-1">
-          {isPlayerFixture ? (
-            <button
-              type="button"
-              onClick={(event) =>
-                handleParticipantClick(
-                  event,
-                  fixture.away_player?.slug
-                    ? `/players/${fixture.away_player.slug}`
+          <button
+            type="button"
+            onClick={(event) =>
+              handleParticipantClick(
+                event,
+                isPlayerFixture
+                  ? fixture.away_player?.slug
+                    ? '/players/' + fixture.away_player.slug
+                    : null
+                  : fixture.away_club?.slug
+                    ? '/clubs/' + fixture.away_club.slug
                     : null,
-                )
-              }
-              disabled={!fixture.away_player?.slug}
-              className="font-heading text-center text-sm font-bold text-foreground transition-colors hover:text-primary hover:underline disabled:cursor-default disabled:hover:text-foreground disabled:hover:no-underline"
-            >
-              {awayName}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={(event) =>
-                handleParticipantClick(
-                  event,
-                  fixture.away_club?.slug
-                    ? `/clubs/${fixture.away_club.slug}`
-                    : null,
-                )
-              }
-              disabled={!fixture.away_club?.slug}
-              className="font-heading text-center text-sm font-bold text-foreground transition-colors hover:text-primary hover:underline disabled:cursor-default disabled:hover:text-foreground disabled:hover:no-underline"
-            >
-              {awayName}
-            </button>
-          )}
+              )
+            }
+            disabled={
+              isPlayerFixture
+                ? !fixture.away_player?.slug
+                : !fixture.away_club?.slug
+            }
+            className="font-heading text-center text-sm font-bold text-foreground transition-colors hover:text-primary hover:underline disabled:cursor-default disabled:hover:text-foreground disabled:hover:no-underline"
+          >
+            {awayName}
+          </button>
         </div>
       </div>
 

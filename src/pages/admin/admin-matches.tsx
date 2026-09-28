@@ -109,8 +109,22 @@ const handleFixtureChange = (fixtureId: string) => {
     setDialogOpen(true);
   };
 
-  const handleSave = async () => {
-    if (form.fixture_id === 'none') { toast.error('A fixture is required'); return; }
+const handleSave = async () => {
+  if (form.fixture_id === 'none') {
+    toast.error('A fixture is required');
+    return;
+  }
+
+  const selectedFixture = fixtures.find((f) => f.id === form.fixture_id);
+
+  if (selectedFixture?.status === 'postponed' || selectedFixture?.status === 'cancelled') {
+    toast.error(
+      selectedFixture.status === 'postponed'
+        ? 'This fixture is postponed. Reschedule it before adding a match.'
+        : 'This fixture is cancelled. A match cannot be added to it.'
+    );
+    return;
+  }
     setSaving(true);
     const payload: Record<string, any> = {
       fixture_id: form.fixture_id,
@@ -142,7 +156,8 @@ const handleFixtureChange = (fixtureId: string) => {
     fetchData();
   };
 
-  const fixtureLabel = (f: Fixture) => `${f.competition_name ?? 'Friendly'} — ${new Date(f.match_date).toLocaleDateString()}`;
+  const fixtureLabel = (f: Fixture) =>
+  `${f.competition_name ?? 'Friendly'} — ${new Date(f.match_date).toLocaleDateString()} · ${f.status}`;
 
   return (
     <div>
